@@ -1,0 +1,87 @@
+# order-service/src/test/resources/application-test.yml
+spring:
+  application:
+    name: saga-choreography-test
+
+  # H2 Test Database Configuration
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  # JPA Configuration for Tests
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+
+  # Disable H2 console in tests
+  h2:
+    console:
+      enabled: false
+
+  # Spring Cloud Stream Test Configuration
+  cloud:
+    stream:
+      default-binder: test
+      bindings:
+        orderCreated-out-0:
+          destination: test-order-events
+        paymentProcessed-out-0:
+          destination: test-payment-events
+        paymentFailed-out-0:
+          destination: test-payment-events
+        orderCompleted-out-0:
+          destination: test-order-events
+        orderCancelled-out-0:
+          destination: test-order-events
+      test:
+        binder:
+          type: test
+
+# Fast processing for tests
+saga:
+  payment:
+    processing-delay: PT0.1S  # 100ms for fast tests
+    timeout-threshold: PT1S   # 1 second timeout
+    failure-rate: 0.0
+    enable-timeout: false
+
+# Test logging configuration
+logging:
+  level:
+    com.example.saga: INFO
+    org.springframework.cloud.stream: WARN
+    org.hibernate.SQL: WARN
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+---
+# Test profile for timeout scenarios
+spring:
+  config:
+    activate:
+      on-profile: test-timeout
+
+saga:
+  payment:
+    processing-delay: PT2S    # 2 seconds delay
+    timeout-threshold: PT1S   # 1 second timeout (shorter than delay)
+    enable-timeout: true
+
+---
+# Test profile for failure scenarios
+spring:
+  config:
+    activate:
+      on-profile: test-failure
+
+saga:
+  payment:
+    failure-rate: 1.0  # 100% failure rate for testing
+    processing-delay: PT0.1S

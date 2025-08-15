@@ -9,7 +9,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @SpringBootApplication(scanBasePackages = {
         "org.example.orderservice",
         "org.example.paymentservice",
-        "org.example.common"
+        "org.example.common",
+        "org.example.coreconfig"
 })
 @EnableJpaRepositories(basePackages = {
         "org.example.orderservice",
