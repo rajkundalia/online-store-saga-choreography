@@ -1,0 +1,1 @@
+[![Java CI with Maven](https://github.com/rajkundalia/online-store-saga-choreography/actions/workflows/maven.yml/badge.svg)](https://github.com/rajkundalia/online-store-saga-choreography/actions/workflows/maven.yml)
