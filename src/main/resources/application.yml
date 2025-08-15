@@ -1,0 +1,147 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: online-store-saga-choreography
+
+  # H2 Database Configuration
+  datasource:
+    url: jdbc:h2:file:./saga-choreography-db;AUTO_SERVER=TRUE;DB_CLOSE_DELAY=-1
+    driverClassName: org.h2.Driver
+    username: sa
+    password:
+
+  # JPA/Hibernate Configuration
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        use_sql_comments: true
+
+  # H2 Console (for monitoring)
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+      settings:
+        web-allow-others: true
+
+  # Spring Cloud Stream Configuration
+  cloud:
+    stream:
+      default-binder: test
+      bindings:
+        # Order Service Outputs
+        orderCreated-out-0:
+          destination: order-events
+          content-type: application/json
+        orderCompleted-out-0:
+          destination: order-events
+          content-type: application/json
+        orderCancelled-out-0:
+          destination: order-events
+          content-type: application/json
+        inventoryRestocked-out-0:
+          destination: inventory-events
+          content-type: application/json
+
+        # Payment Service Outputs
+        paymentProcessed-out-0:
+          destination: payment-events
+          content-type: application/json
+        paymentFailed-out-0:
+          destination: payment-events
+          content-type: application/json
+        refundProcessed-out-0:
+          destination: payment-events
+          content-type: application/json
+
+        # Event Consumers
+        orderCreatedConsumer-in-0:
+          destination: order-events
+          content-type: application/json
+          group: payment-service
+        paymentProcessedConsumer-in-0:
+          destination: payment-events
+          content-type: application/json
+          group: order-service
+        paymentFailedConsumer-in-0:
+          destination: payment-events
+          content-type: application/json
+          group: order-service
+
+      # Test Binder Configuration
+      test:
+        binder:
+          # Enable test binder for simplified messaging without external brokers
+          type: test
+
+# Saga Configuration
+saga:
+  payment:
+    # Artificial processing delay for timeout demonstrations
+    processing-delay: PT2S  # 2 seconds delay
+    # Timeout threshold (should be less than processing-delay for timeout scenarios)
+    timeout-threshold: PT5S  # 5 seconds timeout
+    # Random failure rate (0.0 = no failures, 0.3 = 30% failure rate)
+    failure-rate: 0.0
+    # Enable timeout handling
+    enable-timeout: false
+
+# Logging Configuration
+logging:
+  level:
+    org.example: DEBUG
+    org.springframework.cloud.stream: INFO
+    org.springframework.transaction: INFO
+    org.hibernate.SQL: DEBUG
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level [%X{sagaId},%X{correlationId}] %logger{36} - %msg%n"
+
+# Management and Monitoring
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+---
+# Profile for timeout scenarios
+spring:
+  config:
+    activate:
+      on-profile: timeout-demo
+
+saga:
+  payment:
+    processing-delay: PT10S  # 10 seconds delay
+    timeout-threshold: PT8S  # 8 seconds timeout (less than delay)
+    enable-timeout: true
+
+---
+# Profile for failure scenarios
+spring:
+  config:
+    activate:
+      on-profile: failure-demo
+
+saga:
+  payment:
+    failure-rate: 0.5  # 50% failure rate
+    processing-delay: PT1S
+
+---
+# Profile for concurrency testing
+spring:
+  config:
+    activate:
+      on-profile: concurrency-test
+
