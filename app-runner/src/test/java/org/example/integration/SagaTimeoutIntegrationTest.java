@@ -1,4 +1,4 @@
-package example.integration;
+package org.example.integration;
 
 import org.example.SagaChoreographyApplication;
 import org.example.common.enums.OrderStatus;
@@ -8,7 +8,6 @@ import org.example.common.repository.ProcessedEventRepository;
 import org.example.orderservice.entity.Order;
 import org.example.orderservice.repository.OrderRepository;
 import org.example.orderservice.service.OrderService;
-import org.example.paymentservice.entity.Payment;
 import org.example.paymentservice.repository.PaymentRepository;
 import org.example.paymentservice.service.PaymentService;
 import org.junit.jupiter.api.BeforeEach;

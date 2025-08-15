@@ -1,4 +1,4 @@
-package example.integration;
+package org.example.integration;
 
 import org.example.SagaChoreographyApplication;
 import org.example.common.entity.ProcessedEvent;
