@@ -9,7 +9,7 @@ in a 2-service architecture with Spring Cloud Stream Test Binder.
 
 ## Key Features Implemented
 
-### ✅ Rollback Mechanism with Local Compensating Transactions
+### Rollback Mechanism with Local Compensating Transactions
 
 **Order Service Compensation:**
 - `CancelOrder` → Updates order status to CANCELLED
@@ -25,7 +25,7 @@ SUCCESS: OrderCreated → PaymentProcessed → OrderCompleted
 FAILURE: OrderCreated → PaymentFailed → RefundPayment → CancelOrder → RestockItems
 ```
 
-### ✅ Comprehensive Idempotency Implementation
+### Comprehensive Idempotency Implementation
 
 - **Idempotent Token System** using `ProcessedEvent` entity
 - **Detection & Skip Logic** for duplicate event processing
