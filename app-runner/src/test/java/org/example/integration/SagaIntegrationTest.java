@@ -9,7 +9,9 @@ import org.example.common.events.OrderCreatedEvent;
 import org.example.common.events.PaymentFailedEvent;
 import org.example.common.events.PaymentProcessedEvent;
 import org.example.common.repository.ProcessedEventRepository;
+import org.example.orderservice.entity.Inventory;
 import org.example.orderservice.entity.Order;
+import org.example.orderservice.repository.InventoryRepository;
 import org.example.orderservice.repository.OrderRepository;
 import org.example.orderservice.service.OrderService;
 import org.example.paymentservice.entity.Payment;
@@ -51,6 +53,9 @@ class SagaIntegrationTest {
     private PaymentRepository paymentRepository;
 
     @Autowired
+    private InventoryRepository inventoryRepository;
+
+    @Autowired
     private ProcessedEventRepository processedEventRepository;
 
     @Autowired
@@ -62,6 +67,17 @@ class SagaIntegrationTest {
         processedEventRepository.deleteAll();
         paymentRepository.deleteAll();
         orderRepository.deleteAll();
+        inventoryRepository.deleteAll();
+
+        // Set up initial inventory for testing
+        Inventory inventory = new Inventory(
+                "PROD-001", // Match the productId used in the test
+                10, // A sufficient quantity for the test to pass
+                0,
+                null,
+                null
+        );
+        inventoryRepository.save(inventory);
 
         // Clear message channels
         output.clear();
@@ -125,32 +141,38 @@ class SagaIntegrationTest {
     }
 
     @Test
-    @Transactional
     void createOrder_PaymentFailure_OrderCancelledWithReason() {
         // Given
         CreateOrderRequest request = new CreateOrderRequest(
                 "customer-456",
                 BigDecimal.valueOf(200.00),
-                "PROD-002",
+                "PROD-001",
                 1
         );
 
-        // When - Create order
+        // When - Create order. This starts the saga.
         String orderId = orderService.createOrder(request);
-        Order order = orderRepository.findById(orderId).orElse(null);
 
-        // Simulate payment failure
-        assert order != null;
+        // Await for the order to be committed and visible to other threads.
+        await().atMost(3, TimeUnit.SECONDS).until(() ->
+                orderRepository.findById(orderId).isPresent()
+        );
+
+        Order order = orderRepository.findById(orderId).orElseThrow();
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.PENDING);
+
+        // Simulate the PaymentFailedEvent as if it came from the Payment service.
+        // This is the event that triggers compensation.
         PaymentFailedEvent failedEvent = new PaymentFailedEvent(
                 "event-fail-1", order.getSagaId(), orderId,
                 BigDecimal.valueOf(200.00), "Insufficient funds", "INSUFFICIENT_FUNDS",
                 order.getCreatedAt()
         );
 
-        // Trigger compensation
+        // Trigger compensation directly by calling the handler method.
         orderService.handlePaymentFailed(failedEvent);
 
-        // Verify compensation completed
+        // Then - Verify compensation completed.
         await().atMost(3, TimeUnit.SECONDS).untilAsserted(() -> {
             Order cancelledOrder = orderRepository.findById(orderId).orElse(null);
             assertThat(cancelledOrder).isNotNull();
@@ -242,7 +264,7 @@ class SagaIntegrationTest {
         CreateOrderRequest request = new CreateOrderRequest(
                 "customer-trace",
                 BigDecimal.valueOf(75.00),
-                "PROD-002",
+                "PROD-001",
                 3
         );
 
