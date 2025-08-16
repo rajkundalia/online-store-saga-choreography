@@ -99,9 +99,9 @@ logging:
     org.example: DEBUG
     org.springframework.cloud.stream: INFO
     org.springframework.transaction: INFO
-    org.hibernate.SQL: DEBUG
+    org.hibernate.SQL: WARN
   pattern:
-    console: "%d{HH:mm:ss.SSS} [%thread] %-5level [%X{sagaId},%X{correlationId}] %logger{36} - %msg%n"
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
 
 # Management and Monitoring
 management:

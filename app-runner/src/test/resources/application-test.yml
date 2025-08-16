@@ -1,4 +1,3 @@
-# order-service/src/test/resources/application-test.yml
 spring:
   application:
     name: saga-choreography-test

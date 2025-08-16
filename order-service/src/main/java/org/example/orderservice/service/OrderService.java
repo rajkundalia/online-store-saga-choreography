@@ -108,6 +108,11 @@ public class OrderService {
             Order order = orderRepository.findById(event.getOrderId())
                     .orElseThrow(() -> new IllegalStateException("Order not found: " + event.getOrderId()));
 
+            if (order.getStatus() == OrderStatus.CANCELLED) {
+                log.warn("Order already cancelled; PaymentProcessedEvent will be ignored: orderId={}", event.getOrderId());
+                return;
+            }
+
             // Update order status to completed
             order.setStatus(OrderStatus.COMPLETED);
             orderRepository.save(order);
